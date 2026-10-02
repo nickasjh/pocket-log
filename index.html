@@ -6,56 +6,66 @@
 <title>Pocket Log</title>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="favicon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Pocket Log">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#EAF2FF">
+<style>
+  :root{--bg:#EAF2FF;--ink:#1F2A44;--soft:#5B6785}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);overflow:hidden}
+  body{font-family:ui-rounded,'SF Pro Rounded',system-ui,sans-serif;color:var(--ink)}
+  /* keep the app clear of the iPhone notch and home bar */
+  .shell{position:fixed;inset:0;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);background:var(--bg)}
+  iframe{display:block;width:100%;height:100%;border:0;background:var(--bg)}
+  .splash{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+    background:var(--bg);transition:opacity .3s;z-index:2}
+  .splash img{width:96px;height:96px;border-radius:24px;box-shadow:0 10px 30px rgba(31,42,68,.15)}
+  .splash p{margin:0;color:var(--soft);font-size:15px}
+  .splash.gone{opacity:0;pointer-events:none}
+  .tip{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:3;background:var(--ink);color:#fff;
+    border-radius:14px;padding:10px 12px;font-size:14px;display:flex;gap:10px;align-items:center}
+  .tip button{margin-left:auto;border:0;background:#FFC94A;color:var(--ink);border-radius:10px;padding:6px 10px;font:inherit;font-weight:600}
+  [hidden]{display:none!important}
+  @media (prefers-reduced-motion:reduce){.splash{transition:none}}
+</style>
+</head>
+<body>
+<div class="shell"><iframe id="app" title="Pocket Log"></iframe></div>
+<div class="splash" id="splash"><img src="icon-192.png" alt=""><p>Opening Pocket Log…</p></div>
+<div class="tip" id="tip" hidden>For the app icon: tap Share, then Add to Home Screen.<button id="tipOk">Got it</button></div>
 <script>
   // Your Apps Script web app URL (the one ending in /exec)
   var APP_URL = 'https://script.google.com/macros/s/AKfycbzAwiSktRshNDMJGayDEvcPRPB9a2ezWgerTvUnIMgx3I17_3zc5BlTDoS1uj6Q1y69/exec';
 
-  // The Home Screen icon opens this page with ?go=1, which jumps straight to the app
-  // in a normal browser tab, where you're already signed in to Google.
-  var GO = /[?&]go=1/.test(window.location.search);
-  if (GO) window.location.replace(APP_URL);
-</script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&display=swap" rel="stylesheet">
-<style>
-  :root{--bg:#EAF2FF;--ink:#1F2A44;--soft:#5B6785;--card:#fff;--line:#D5E1F5}
-  *{box-sizing:border-box}
-  html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink)}
-  body{font-family:'Fredoka',ui-rounded,system-ui,sans-serif;display:flex;align-items:center;justify-content:center;
-    padding:max(24px,env(safe-area-inset-top)) 20px max(24px,env(safe-area-inset-bottom))}
-  main{max-width:360px;width:100%;text-align:center}
-  img{width:132px;height:132px;border-radius:30px;box-shadow:0 10px 30px rgba(31,42,68,.15)}
-  h1{font-size:30px;margin:18px 0 6px}
-  p{color:var(--soft);margin:0 0 18px;line-height:1.45}
-  [hidden]{display:none!important}
-  ol{background:var(--card);border:2px solid var(--line);border-radius:20px;text-align:left;padding:16px 16px 16px 38px;margin:0 0 18px;line-height:1.6}
-  a{display:block;background:var(--ink);color:#fff;text-decoration:none;font-weight:700;font-size:18px;padding:15px;border-radius:18px}
-  a:focus-visible{outline:3px solid #FF6FA3;outline-offset:3px}
-</style>
-</head>
-<body>
-<main>
-  <img src="icon-512.png" alt="Pocket Log icon">
-  <h1>Pocket Log</h1>
-  <p id="intro">Add this page to your Home Screen to get the app with its icon.</p>
-  <ol id="steps">
-    <li>Tap the share button (square with an arrow) in Chrome's address bar</li>
-    <li>Tap <strong>Add to Home Screen</strong></li>
-    <li>Tap <strong>Add</strong></li>
-  </ol>
-  <a id="open" href="#">Open Pocket Log</a>
-</main>
-<script>
-  document.getElementById('open').href = APP_URL;
-  if (GO) {
-    document.getElementById('intro').textContent = 'Opening Pocket Log…';
-    document.getElementById('steps').hidden = true;
-  } else if (window.history && history.replaceState) {
-    // Quietly add ?go=1 so the Home Screen shortcut saves the "open the app" address
-    history.replaceState(null, '', window.location.pathname + '?go=1');
-  }
+  var KEY = 'pl-pin';
+  function get(k){ try { return localStorage.getItem(k) || ''; } catch(e){ return ''; } }
+  function set(k,v){ try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch(e){} }
+
+  // Load the app; a remembered PIN goes along so it opens unlocked
+  var pin = get(KEY);
+  var frame = document.getElementById('app');
+  frame.src = APP_URL + (pin ? '?k=' + encodeURIComponent(pin) : '');
+  function hideSplash(){ document.getElementById('splash').classList.add('gone'); }
+  frame.addEventListener('load', hideSplash);
+  setTimeout(hideSplash, 8000);
+
+  // The app tells us when to remember or forget the PIN (only Google's app frames are listened to)
+  window.addEventListener('message', function(e){
+    var host = '';
+    try { host = new URL(e.origin).hostname; } catch(err) { return; }
+    if (!/(^|\.)googleusercontent\.com$|(^|\.)google\.com$/.test(host)) return;
+    var d = e.data || {};
+    if (typeof d.plPin === 'string' && /^\d{6}$/.test(d.plPin)) set(KEY, d.plPin);
+    if (d.plPinClear) set(KEY, '');
+  });
+
+  // Show the Home Screen tip once, only in a normal browser tab
+  var standalone = navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+  if (!standalone && !get('pl-tip')) document.getElementById('tip').hidden = false;
+  document.getElementById('tipOk').onclick = function(){ set('pl-tip', '1'); document.getElementById('tip').hidden = true; };
 </script>
 </body>
 </html>
