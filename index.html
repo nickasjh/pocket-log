@@ -6,20 +6,16 @@
 <title>Pocket Log</title>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="favicon.png">
-<link rel="manifest" href="manifest.webmanifest">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Pocket Log">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#EAF2FF">
 <script>
-  // 1) Paste your Apps Script web app URL (the one ending in /exec) between the quotes
+  // Your Apps Script web app URL (the one ending in /exec)
   var APP_URL = 'https://script.google.com/macros/s/AKfycbzAwiSktRshNDMJGayDEvcPRPB9a2ezWgerTvUnIMgx3I17_3zc5BlTDoS1uj6Q1y69/exec';
 
-  // Opened from the Home Screen icon → go straight to the app
-  var fromHome = window.navigator.standalone === true ||
-    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
-  if (fromHome && APP_URL.indexOf('https://') === 0) window.location.replace(APP_URL);
+  // The Home Screen icon opens this page with ?go=1, which jumps straight to the app
+  // in a normal browser tab, where you're already signed in to Google.
+  var GO = /[?&]go=1/.test(window.location.search);
+  if (GO) window.location.replace(APP_URL);
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&display=swap" rel="stylesheet">
@@ -33,6 +29,7 @@
   img{width:132px;height:132px;border-radius:30px;box-shadow:0 10px 30px rgba(31,42,68,.15)}
   h1{font-size:30px;margin:18px 0 6px}
   p{color:var(--soft);margin:0 0 18px;line-height:1.45}
+  [hidden]{display:none!important}
   ol{background:var(--card);border:2px solid var(--line);border-radius:20px;text-align:left;padding:16px 16px 16px 38px;margin:0 0 18px;line-height:1.6}
   a{display:block;background:var(--ink);color:#fff;text-decoration:none;font-weight:700;font-size:18px;padding:15px;border-radius:18px}
   a:focus-visible{outline:3px solid #FF6FA3;outline-offset:3px}
@@ -42,14 +39,23 @@
 <main>
   <img src="icon-512.png" alt="Pocket Log icon">
   <h1>Pocket Log</h1>
-  <p>Add this page to your Home Screen to get the app with its icon.</p>
-  <ol>
+  <p id="intro">Add this page to your Home Screen to get the app with its icon.</p>
+  <ol id="steps">
     <li>Tap the share button (square with an arrow) in Chrome's address bar</li>
     <li>Tap <strong>Add to Home Screen</strong></li>
     <li>Tap <strong>Add</strong></li>
   </ol>
   <a id="open" href="#">Open Pocket Log</a>
 </main>
-<script>document.getElementById('open').href = APP_URL;</script>
+<script>
+  document.getElementById('open').href = APP_URL;
+  if (GO) {
+    document.getElementById('intro').textContent = 'Opening Pocket Log…';
+    document.getElementById('steps').hidden = true;
+  } else if (window.history && history.replaceState) {
+    // Quietly add ?go=1 so the Home Screen shortcut saves the "open the app" address
+    history.replaceState(null, '', window.location.pathname + '?go=1');
+  }
+</script>
 </body>
 </html>
